@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Boot camp Manager</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-6 py-6">
+
+      <h1 class="text-4xl font-bold">
+        🎓 Student Bootcamp Manager
+      </h1>
+
+      <p class="text-indigo-100">
+        Student Registration & Performance Tracking System
+      </p>
+
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+
+    <!-- Dashboard -->
+    <section class="grid md:grid-cols-4 gap-6">
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <p class="text-gray-500">Total Students</p>
+        <h2 id="totalStudents"
+            class="text-4xl font-bold text-indigo-600">
+          0
+        </h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <p class="text-gray-500">Passed</p>
+        <h2 id="passedStudents"
+            class="text-4xl font-bold text-green-600">
+          0
+        </h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <p class="text-gray-500">Failed</p>
+        <h2 id="failedStudents"
+            class="text-4xl font-bold text-red-500">
+          0
+        </h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <p class="text-gray-500">Class Average</p>
+        <h2 id="classAverage"
+            class="text-4xl font-bold text-blue-600">
+          0%
+        </h2>
+      </div>
+
+    </section>
+
+    <!-- Form -->
+    <section class="bg-white p-6 rounded-xl shadow mt-8">
+
+      <h2 class="text-2xl font-bold mb-4">
+        ➕ Add Student
+      </h2>
+
+      <form
+        id="studentForm"
+        class="grid md:grid-cols-3 gap-4"
+      >
+
+        <input
+          id="studentName"
+          type="text"
+          placeholder="Student Name"
+          class="border rounded-lg p-3"
+          required
+        >
+
+        <input
+          id="studentCourse"
+          type="text"
+          placeholder="Course"
+          class="border rounded-lg p-3"
+        >
+
+        <input
+          id="studentMarks"
+          type="text"
+          placeholder="80,75,90"
+          class="border rounded-lg p-3"
+          required
+        >
+
+        <button
+          class="bg-indigo-600 text-white rounded-lg py-3"
+          type="submit"
+        >
+          Add Student
+        </button>
+
+      </form>
+
+    </section>
+
+    <!-- Search -->
+    <section class="grid md:grid-cols-2 gap-4 mt-8">
+
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="🔍 Search Student"
+        class="border rounded-lg p-3"
+      >
+
+      <select
+        id="courseFilter"
+        class="border rounded-lg p-3"
+      >
+        <option value="All">
+          All Courses
+        </option>
+      </select>
+
+    </section>
+
+    <!-- Table -->
+    <section
+      class="bg-white rounded-xl shadow mt-8 overflow-hidden"
+    >
+
+      <div class="p-6 border-b">
+        <h2 class="text-2xl font-bold">
+          📋 Student Records
+        </h2>
+      </div>
+
+      <table class="w-full">
+
+        <thead class="bg-slate-100">
+
+          <tr>
+            <th class="p-4 text-left">ID</th>
+            <th class="p-4 text-left">Name</th>
+            <th class="p-4 text-left">Course</th>
+            <th class="p-4 text-left">Average</th>
+            <th class="p-4 text-left">Status</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="studentTable">
+
+        </tbody>
+
+      </table>
+
+    </section>
+
+    <!-- Bonus Stats -->
+    <section class="grid md:grid-cols-3 gap-6 mt-8">
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="font-bold text-lg">
+          🏆 Top Student
+        </h3>
+
+        <p id="topStudent">
+          None
+        </p>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="font-bold text-lg">
+          📈 Highest Mark
+        </h3>
+
+        <p id="highestMark">-</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="font-bold text-lg">
+          📉 Lowest Mark
+        </h3>
+
+        <p id="lowestMark">-</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // ============================
+    // STORAGE
+    // ============================
+
+    const students = [];
+
+    // ============================
+    // GENERATOR
+    // ============================
+
+    function* studentIdGenerator() {
+      let id = 1;
+
+      while (true) {
+        yield `STU${String(id++).padStart(3, "0")}`;
+      }
+    }
+
+    const idGenerator = studentIdGenerator();
+
+    // ============================
+    // CREATE STUDENT
+    // ============================
+
+    function createStudent(
+      name,
+      course = "JavaScript",
+      ...marks
+    ) {
+      return {
+        id: idGenerator.next().value,
+        name,
+        course,
+        marks
+      };
+    }
+
+    // ============================
+    // AVERAGE
+    // ============================
+
+    function calculateAverage(marks) {
+      if (!marks.length) return 0;
+
+      return (
+        marks.reduce(
+          (sum, mark) => sum + mark,
+          0
+        ) / marks.length
+      );
+    }
+
+    function getStatus(
+      average,
+      passMark = 50
+    ) {
+      return average >= passMark
+        ? "PASS"
+        : "FAIL";
+    }
+
+    function renderStudents(
+      filteredStudents = students
+    ) {
+
+      const table =
+        document.getElementById(
+          "studentTable"
+        );
+
+      table.innerHTML = "";
+
+      filteredStudents.forEach(student => {
+
+        const avg =
+          calculateAverage(
+            student.marks
+          );
+
+        const status =
+          getStatus(avg);
+
+        table.innerHTML += `
+        <tr class="border-b">
+
+          <td class="p-4">
+            ${student.id}
+          </td>
+
+          <td class="p-4">
+            ${student.name}
+          </td>
+
+          <td class="p-4">
+            ${student.course}
+          </td>
+
+          <td class="p-4">
+            ${avg.toFixed(2)}%
+          </td>
+
+          <td class="p-4">
+
+            <span
+              class="
+              px-3 py-1 rounded-full
+              ${status === "PASS"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"}
+              "
+            >
+              ${status}
+            </span>
+
+          </td>
+
+        </tr>
+        `;
+      });
+
+      updateDashboard();
+    }
+
+    function updateDashboard() {
+
+      document.getElementById(
+        "totalStudents"
+      ).textContent =
+        students.length;
+
+      const passed =
+        students.filter(student =>
+          getStatus(
+            calculateAverage(
+              student.marks
+            )
+          ) === "PASS"
+        ).length;
+
+      document.getElementById(
+        "passedStudents"
+      ).textContent = passed;
+
+      document.getElementById(
+        "failedStudents"
+      ).textContent =
+        students.length - passed;
+
+      const avg =
+        students.length
+          ? students.reduce(
+              (sum, student) =>
+                sum +
+                calculateAverage(
+                  student.marks
+                ),
+              0
+            ) / students.length
+          : 0;
+
+      document.getElementById(
+        "classAverage"
+      ).textContent =
+        `${avg.toFixed(2)}%`;
+
+      updateTopStudent();
+    }
+
+    function updateTopStudent() {
+
+      if (!students.length) return;
+
+      const top =
+        students.reduce(
+          (best, current) =>
+            calculateAverage(
+              current.marks
+            ) >
+            calculateAverage(
+              best.marks
+            )
+              ? current
+              : best
+        );
+
+      document.getElementById(
+        "topStudent"
+      ).textContent =
+        `${top.name} (${calculateAverage(
+          top.marks
+        ).toFixed(2)}%)`;
+
+      const allMarks =
+        students.flatMap(
+          student =>
+            student.marks
+        );
+
+      document.getElementById(
+        "highestMark"
+      ).textContent =
+        `${Math.max(...allMarks)}%`;
+
+      document.getElementById(
+        "lowestMark"
+      ).textContent =
+        `${Math.min(...allMarks)}%`;
+    }
+
+    function updateCourseFilter() {
+
+      const filter =
+        document.getElementById(
+          "courseFilter"
+        );
+
+      const courses =
+        [...new Set(
+          students.map(
+            student =>
+              student.course
+          )
+        )];
+
+      filter.innerHTML =
+        `<option value="All">All Courses</option>`;
+
+      courses.forEach(course => {
+
+        filter.innerHTML += `
+        <option value="${course}">
+          ${course}
+        </option>
+        `;
+      });
+    }
+
+    function applyFilters() {
+
+      const search =
+        document
+          .getElementById(
+            "searchInput"
+          )
+          .toLowerCase();
+
+      const course =
+        document
+          .getElementById(
+            "courseFilter"
+          )
+          .value;
+
+      const filtered =
+        students.filter(student => {
+
+          const matchesName =
+            student.name
+              .toLowerCase()
+              .includes(search);
+
+          const matchesCourse =
+            course === "All"
+              ? true
+              : student.course === course;
+
+          return (
+            matchesName &&
+            matchesCourse
+          );
+        });
+
+      renderStudents(filtered);
+    }
+
+    // Search
+
+    document
+      .getElementById(
+        "searchInput"
+      )
+      .addEventListener(
+        "input",
+        applyFilters
+      );
+
+    document
+      .getElementById(
+        "courseFilter"
+      )
+      .addEventListener(
+        "change",
+        applyFilters
+      );
+
+    // Form
+
+    document
+      .getElementById(
+        "studentForm"
+      )
+      .addEventListener(
+        "submit",
+        function (e) {
+
+          e.preventDefault();
+
+          const name =
+            document
+              .getElementById(
+                "studentName"
+              )
+              .value;
+
+          const course =
+            document
+              .getElementById(
+                "studentCourse"
+              )
+              .value ||
+            "JavaScript";
+
+          const marks =
+            document
+              .getElementById(
+                "studentMarks"
+              )
+              .value
+              .split(",")
+              .map(mark =>
+                Number(mark.trim())
+              );
+
+          students.push(
+            createStudent(
+              name,
+              course,
+              ...marks
+            )
+          );
+
+          updateCourseFilter();
+          renderStudents();
+
+          this.reset();
+        }
+      );
+
+    // Demo Data
+
+    students.push(
+      createStudent(
+        "David",
+        "JavaScript",
+        80,
+        75,
+        90
+      ),
+
+      createStudent(
+        "Sarah",
+        "Python",
+        60,
+        70,
+        80
+      ),
+
+      createStudent(
+        "John",
+        "JavaScript",
+        40,
+        45,
+        50
+      ),
+
+      createStudent(
+        "Lisa",
+        "React",
+        95,
+        90,
+        85
+      )
+    );
+
+    updateCourseFilter();
+    renderStudents();
+  </script>
+
+</body>
+</html>
